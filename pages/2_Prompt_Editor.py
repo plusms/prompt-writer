@@ -153,12 +153,12 @@ if selected_type:
         st.write(f"Token Found: {'Yes' if token else 'No'}")
         st.write(f"Repo Found: {'Yes' if repo else 'No'}")
     
-    if github_token and repo_name:
+    if token and repo:
         st.sidebar.success("GitHub連携: 有効 ✅")
         if st.sidebar.button("GitHubにコミット (完全保存)"):
             try:
                 from github_handler import GitHubHandler
-                gh = GitHubHandler(github_token, repo_name)
+                gh = GitHubHandler(token, repo)
                 
                 # Commit config/prompts.json
                 json_str = json.dumps(prompts_data, indent=4, ensure_ascii=False)
@@ -175,7 +175,7 @@ if selected_type:
                 st.error(f"予期せぬエラー: {e}")
     else:
         st.sidebar.warning("GitHub連携: 無効 ⚠️")
-        st.sidebar.info("secrets.toml に `GITHUB_TOKEN` と `GITHUB_REPOSITORY` を設定すると、ここから直接リポジトリに保存できます。")
+        st.sidebar.info("Secretsに `GITHUB_TOKEN` と `GITHUB_REPOSITORY` が設定されていません。Manage App > Settings > Secrets で設定してください。")
 
     if st.button("変更を保存 (アプリのみ / 一時保存)"):
         # 1. Save Local (Ephemeral)
