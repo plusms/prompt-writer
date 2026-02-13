@@ -2,7 +2,7 @@ import json
 import os
 from typing import Dict, Any
 
-CONFIG_FILE = "sites.json"
+CONFIG_FILE = "config/sites.json"
 
 def load_sites_config() -> Dict[str, Any]:
     """Loads the WordPress sites configuration from sites.json."""

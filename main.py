@@ -24,8 +24,8 @@ def process_batch(api_key, sheet_url, sheet_name=None, dry_run=False, log_callba
     creds_path = get_sheets_credentials_path()
     
     if not sites_config:
-        log_callback("Error: No sites.json found or empty.")
-        return
+        log_callback("Warning: No sites.json found or empty. WordPress submission will be skipped.")
+        sites_config = {}
     
     # 2. Handlers Init
     log_callback("Initializing handlers...")
