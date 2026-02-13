@@ -58,7 +58,7 @@
             }
         },
         "STEP 1": {
-            "exec": "test",
+            "exec": "",
             "check": ""
         }
     },
