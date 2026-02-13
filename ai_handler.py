@@ -89,12 +89,17 @@ class AIHandler:
 
             # Format prompt (slug/kw injection)
             try:
-                # DEBUG LOGGING for Attribute Error investigation
+                # DEBUG LOGGING for Attribute Error investigation (Exec Text)
                 if isinstance(exec_text, dict):
                     print(f"CRITICAL ERROR DETECTED at {step}: exec_text is a DICT!")
                     print(f"Content: {exec_text}")
-                    # Fallback cleanup if possible or just convert to str to avoid crash
                     exec_text = str(exec_text)
+
+                # DEBUG LOGGING for Attribute Error investigation (Check Text)
+                if isinstance(check_text, dict):
+                    print(f"CRITICAL ERROR DETECTED at {step}: check_text is a DICT!")
+                    print(f"Content: {check_text}")
+                    check_text = str(check_text)
 
                 formatted_exec = exec_text.format(slug=slug, main_kw=main_kw)
                 formatted_check = check_text.format(slug=slug, main_kw=main_kw) if check_text else ""
