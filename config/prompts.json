@@ -104,10 +104,6 @@
                 "col": 10,
                 "key": "title"
             },
-            "STEP 4 (Desc)": {
-                "col": 11,
-                "key": "description"
-            },
             "STEP 5": {
                 "col": 12,
                 "key": "content"
