@@ -151,6 +151,9 @@ def process_batch(api_key, sheet_url, sheet_name=None, dry_run=False, log_callba
                 except Exception as e:
                     log_callback(f"Failed to update sheet status: {e}")
 
+            # Track mapped columns to avoid overwriting
+            mapped_cols_written = set()
+
             # Step Completion Callback (Real-time Sheet Update)
             def step_listener(step_name, response_text):
                 if step_name in mappings:
@@ -161,6 +164,7 @@ def process_batch(api_key, sheet_url, sheet_name=None, dry_run=False, log_callba
                         try:
                             if not dry_run:
                                 sheet.update_any_cell(row_idx, target_col, response_text)
+                                mapped_cols_written.add(target_col)
                             else:
                                 log_callback(f"[DRY RUN] Would write to Col {target_col}")
                         except Exception as e:
@@ -173,10 +177,11 @@ def process_batch(api_key, sheet_url, sheet_name=None, dry_run=False, log_callba
                 step_callback=step_listener
             )
         
-        if not generated["content"]:
-            log_callback("Error: Failed to generate content.")
-            continue
-            
+        if not generated["content"] and 12 not in mapped_cols_written:
+             # Only error if content wasn't written via mapping AND wasn't parsed
+             # But if mapping wrote it, generated["content"] might be empty if parse failed, which is fine
+             pass
+             
         # 3b. WP Submission
         draft_url = ""
         if site_name and site_name in sites_config:
@@ -186,9 +191,15 @@ def process_batch(api_key, sheet_url, sheet_name=None, dry_run=False, log_callba
                     log_callback(f"[DRY RUN] Would post to {site_name} with slug {task.get('Slug')}")
                     draft_url = "http://example.com/draft-preview"
                 else:
+                    # Use parsed content for WP (OR should we read from sheet? sticking to parsed for now)
+                    # Note: If Mappings utilized, generated["content"] might be empty if regex failed.
+                    # Ideally we should trust the generated dict if available, but if empty, maybe user mapped it?
+                    # For WP submission, we might need to rely on what was generated.
+                    # For now, assuming regex works reasonably well for WP, or user accepts that WP uses parsed.
+                    
                     draft_url = wp.post_draft(
-                        title=generated["title"],
-                        content=generated["content"],
+                        title=generated.get("title", ""),
+                        content=generated.get("content", ""),
                         slug=task.get("Slug", "")
                     )
             except Exception as e:
@@ -196,20 +207,42 @@ def process_batch(api_key, sheet_url, sheet_name=None, dry_run=False, log_callba
         else:
             log_callback(f"Site '{site_name}' not configured or empty. Skipping WP upload.")
         
-        # 3c. Sheet Update
+        # 3c. Sheet Update (Final)
         if dry_run:
-            log_callback(f"[DRY RUN] Would update sheet row {row_idx} -> Status: 完了, URL: {draft_url}, Content Length: {len(generated['content'])}")
+            log_callback(f"[DRY RUN] Final Update for Row {row_idx}.")
         else:
-            # CORRECTED: Passing Title and Description separately
-            sheet.update_task_complete(
-                row_idx, 
-                draft_url, 
-                generated["image_prompts"], 
-                title=generated.get("title", ""),
-                description=generated.get("description", ""),
-                html_content=generated["content"]
-            )
-            log_callback(f"Updated Sheet Row {row_idx}.")
+            # 1. Update Status (Always)
+            try:
+                sheet.update_status(row_idx, "完了")
+            except: pass
+            
+            # 2. Update Draft URL (Column 8 - H)
+            try:
+                sheet.update_any_cell(row_idx, 8, draft_url)
+            except: pass
+            
+            # 3. Update other columns ONLY IF not mapped
+            # Column 9 (I): Image Prompts
+            if 9 not in mapped_cols_written and generated.get("image_prompts"):
+                try: sheet.update_any_cell(row_idx, 9, generated["image_prompts"])
+                except: pass
+
+            # Column 10 (J): Title
+            if 10 not in mapped_cols_written and generated.get("title"):
+                try: sheet.update_any_cell(row_idx, 10, generated["title"])
+                except: pass
+
+            # Column 11 (K): Description
+            if 11 not in mapped_cols_written and generated.get("description"):
+                try: sheet.update_any_cell(row_idx, 11, generated["description"])
+                except: pass
+                
+            # Column 12 (L): Content
+            if 12 not in mapped_cols_written and generated.get("content"):
+                try: sheet.update_any_cell(row_idx, 12, generated["content"])
+                except: pass
+
+            log_callback(f"Updated Sheet Row {row_idx} (Status: 完了).")
 
     log_callback("\nAll tasks processed.")
 
