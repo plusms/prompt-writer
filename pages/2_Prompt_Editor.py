@@ -82,16 +82,8 @@ if selected_type:
                 "check": new_check
             }
     
-    # Edit Mappings (Beta)
+    # Edit Mappings
     with tabs[-1]:
-        st.write("出力セルの指定 (Beta)")
-        mappings = current_data.get("mappings", {})
-        st.json(mappings)
-        # Simple Editor for Mappings (Text Area as JSON)
-        map_str = st.text_area("Mappings JSON", value=json.dumps(mappings, indent=2, ensure_ascii=False), height=300)
-        try:
-             json_val = json.loads(map_str)
-             current_data["mappings"] = json_val
         except:
              st.error("JSON形式が不正です")
 

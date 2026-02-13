@@ -83,6 +83,13 @@ class SheetHandler:
         except Exception as e:
             print(f"Error updating status for row {row_index}: {e}")
 
+    def update_any_cell(self, row_index: int, col_index: int, value: str):
+        """Updates any specific cell."""
+        try:
+            self.sheet.update_cell(row_index, col_index, value)
+        except Exception as e:
+            print(f"Error updating cell ({row_index}, {col_index}): {e}")
+
     def get_prompts_from_tab(self, tab_name: str) -> Dict[str, str]:
         """
         Reads Key-Value pairs from a specific tab.

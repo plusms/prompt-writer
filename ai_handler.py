@@ -32,7 +32,7 @@ class AIHandler:
             ]
         )
 
-    def generate_article_flow(self, main_kw: str, sub_kws: str, goal: str, slug: str, prompt_dict: Dict[str, str], progress_callback=None) -> Dict[str, str]:
+    def generate_article_flow(self, main_kw: str, sub_kws: str, goal: str, slug: str, prompt_dict: Dict[str, str], progress_callback=None, step_callback=None) -> Dict[str, str]:
         """
         Executes the multi-step flow using Gemini only.
         """
@@ -98,6 +98,9 @@ class AIHandler:
             try:
                 response = self._send_message_with_retry(chat, next_prompt)
                 full_log += f"\n\n--- User ({step}) ---\n{next_prompt}\n\n--- Gemini ---\n{response.text}"
+                
+                if step_callback:
+                    step_callback(step, response.text)
 
             except Exception as e:
                 print(f"Error at {step}: {e}")

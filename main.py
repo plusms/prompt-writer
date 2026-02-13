@@ -64,6 +64,9 @@ def process_batch(api_key, sheet_url, sheet_name=None, dry_run=False, log_callba
         if not main_kw:
             log_callback(f"Skipping row {row_idx}: No MainKW.")
             continue
+
+        if not article_type:
+            article_type = "Default"
             
         log_callback(f"\nProcessing Row {row_idx}: {main_kw} (Site: {site_name}, Type: {article_type})")
         
@@ -137,6 +140,9 @@ def process_batch(api_key, sheet_url, sheet_name=None, dry_run=False, log_callba
             }
             time.sleep(1)
         else:
+            # Load Mappings (if available)
+            mappings = prompt_dict.get("mappings", {})
+
             # Status Update Callback
             def status_updater(msg):
                 log_callback(f"Status Update: {msg}")
@@ -145,8 +151,27 @@ def process_batch(api_key, sheet_url, sheet_name=None, dry_run=False, log_callba
                 except Exception as e:
                     log_callback(f"Failed to update sheet status: {e}")
 
+            # Step Completion Callback (Real-time Sheet Update)
+            def step_listener(step_name, response_text):
+                if step_name in mappings:
+                    mapping = mappings[step_name]
+                    target_col = mapping.get("col")
+                    if target_col:
+                        log_callback(f"Mapping: Writing {step_name} output to Column {target_col}...")
+                        try:
+                            if not dry_run:
+                                sheet.update_any_cell(row_idx, target_col, response_text)
+                            else:
+                                log_callback(f"[DRY RUN] Would write to Col {target_col}")
+                        except Exception as e:
+                            log_callback(f"Failed to write mapped output: {e}")
+
             status_updater("開始: AI生成中")
-            generated = ai.generate_article_flow(main_kw, sub_kws, goal, slug, prompt_dict, progress_callback=status_updater)
+            generated = ai.generate_article_flow(
+                main_kw, sub_kws, goal, slug, prompt_dict, 
+                progress_callback=status_updater,
+                step_callback=step_listener
+            )
         
         if not generated["content"]:
             log_callback("Error: Failed to generate content.")
