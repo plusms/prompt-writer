@@ -101,6 +101,73 @@ if selected_type:
             except json.JSONDecodeError:
                 st.error("JSON形式が不正です")
 
-    if st.button("変更を保存"):
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 📂 インポート / エクスポート")
+    
+    # Export (Download)
+    if selected_type:
+        export_data = prompts_data[selected_type]
+        json_str = json.dumps(export_data, indent=4, ensure_ascii=False)
+        st.sidebar.download_button(
+            label=f"📥 '{selected_type}' をダウンロード",
+            data=json_str,
+            file_name=f"{selected_type}.json",
+            mime="application/json"
+        )
+        
+    # Import (Upload)
+    uploaded_file = st.sidebar.file_uploader("JSONファイルをアップロード", type=["json"])
+    if uploaded_file is not None:
+        try:
+            import_data = json.load(uploaded_file)
+            # Default new name from filename
+            default_name = os.path.splitext(uploaded_file.name)[0]
+            import_name = st.sidebar.text_input("登録名 (Type Name)", value=default_name)
+            
+            if st.sidebar.button("インポート実行"):
+                if import_name:
+                    prompts_data[import_name] = import_data
+                    save_prompts(prompts_data)
+                    st.toast(f"'{import_name}' をインポートしました！", icon="✅")
+                    st.rerun()
+                else:
+                    st.sidebar.error("名前を入力してください")
+        except Exception as e:
+            st.sidebar.error(f"読み込みエラー: {e}")
+
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 💾 永続化設定 (GitHub)")
+    
+    # Check Secrets
+    github_token = st.secrets.get("GITHUB_TOKEN", "")
+    repo_name = st.secrets.get("GITHUB_REPOSITORY", "")
+    
+    if github_token and repo_name:
+        st.sidebar.success("GitHub連携: 有効 ✅")
+        if st.sidebar.button("GitHubにコミット (完全保存)"):
+            try:
+                from github_handler import GitHubHandler
+                gh = GitHubHandler(github_token, repo_name)
+                
+                # Commit config/prompts.json
+                json_str = json.dumps(prompts_data, indent=4, ensure_ascii=False)
+                success, msg = gh.commit_file("config/prompts.json", json_str, message="Update prompts.json from Streamlit App")
+                
+                if success:
+                    st.toast("GitHubへの保存に成功しました！アプリがリロードされます。", icon="🚀")
+                    st.success("GitHubにコミットしました。変更が反映されるまで数秒〜数分かかる場合があります。")
+                    # No rerun needed strictly, as the file change trigger usually handles it, 
+                    # but we can force it or just wait.
+                else:
+                    st.error(f"GitHub保存エラー: {msg}")
+            except Exception as e:
+                st.error(f"予期せぬエラー: {e}")
+    else:
+        st.sidebar.warning("GitHub連携: 無効 ⚠️")
+        st.sidebar.info("secrets.toml に `GITHUB_TOKEN` と `GITHUB_REPOSITORY` を設定すると、ここから直接リポジトリに保存できます。")
+
+    if st.button("変更を保存 (アプリのみ / 一時保存)"):
+        # 1. Save Local (Ephemeral)
         prompts_data[selected_type] = current_data
         save_prompts(prompts_data)
+        st.info("一時保存しました。（サーバー再起動で消えます。永続化にはサイドバーのGitHub保存を使ってください）")
