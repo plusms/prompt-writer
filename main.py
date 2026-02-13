@@ -3,7 +3,7 @@ import sys
 import time
 import os
 from dotenv import load_dotenv
-from config_manager import load_sites_config, get_gemini_api_key, get_sheets_credentials_path
+from config_manager import load_sites_config, get_gemini_api_key, load_sheets_credentials
 from sheet_handler import SheetHandler
 from wp_handler import WPHandler
 from ai_handler import AIHandler
@@ -20,20 +20,28 @@ def process_batch(api_key, sheet_url, sheet_name=None, dry_run=False, log_callba
     """
     
     # 1. Config Loading (Sites)
+    # 1. Config Loading (Sites)
     sites_config = load_sites_config()
-    creds_path = get_sheets_credentials_path()
+    # LOAD CREDS (Dict or Path)
+    creds_resource = load_sheets_credentials()
     
     if not sites_config:
-        log_callback("Warning: No sites.json found or empty. WordPress submission will be skipped.")
+        log_callback("Warning: No config/sites.json found or empty. WordPress submission will be skipped.")
         sites_config = {}
     
+    if not creds_resource:
+        log_callback("Error: No Google Sheets credentials found (checked secrets and service_account.json).")
+        return
+
     # 2. Handlers Init
     log_callback("Initializing handlers...")
     try:
-        if creds_dict:
-            sheet = SheetHandler(credentials_dict=creds_dict)
+        # Check if creds is dict (from secrets) or path (from file)
+        if isinstance(creds_resource, dict):
+            sheet = SheetHandler(credentials_dict=creds_resource)
         else:
-            sheet = SheetHandler(credentials_path=creds_path)
+            sheet = SheetHandler(credentials_path=creds_resource)
+            
         sheet.connect(sheet_url, sheet_name)
     except Exception as e:
         log_callback(f"Failed to connect to sheet: {e}")

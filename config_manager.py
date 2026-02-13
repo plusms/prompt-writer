@@ -32,6 +32,26 @@ def get_gemini_api_key() -> str:
     """Retrieves the Gemini API key from environment variables."""
     return os.getenv("GEMINI_API_KEY", "")
 
-def get_sheets_credentials_path() -> str:
-    """Retrieves the path to the Google Sheets service account JSON."""
-    return os.getenv("GOOGLE_SHEETS_CREDENTIALS_PATH", "service_account.json")
+def load_sheets_credentials() -> Any:
+    """
+    Retrieves Google Sheets credentials.
+    Returns:
+        - Dict: If found in Streamlit Secrets (for Cloud).
+        - Str: Path to service_account.json (for Local).
+        - None: If neither found.
+    """
+    # 1. Try Streamlit Secrets
+    try:
+        import streamlit as st
+        if hasattr(st, "secrets") and "gcp_service_account" in st.secrets:
+            # st.secrets returns a special AttrDict, convert to standard dict for gspread
+            return dict(st.secrets["gcp_service_account"])
+    except (ImportError, Exception):
+        pass
+
+    # 2. Try Local File
+    creds_path = os.getenv("GOOGLE_SHEETS_CREDENTIALS_PATH", "service_account.json")
+    if os.path.exists(creds_path):
+        return creds_path
+    
+    return None
