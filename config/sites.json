@@ -1,0 +1,14 @@
+{
+    "example_site": {
+        "url": "https://example.com",
+        "user": "your_username",
+        "app_password": "your_application_password_here"
+    },
+    "麻布十番": {
+        "url": "https://makcli.com/wp/",
+        "user": "plsu-ikari",
+        "app_password": "JPVY sA0z 3XmU U4pO QUBN YIdt",
+        "basic_auth_user": "",
+        "basic_auth_pass": ""
+    }
+}

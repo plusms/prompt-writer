@@ -8,7 +8,7 @@ st.title("⚙️ サイト・ルール設定 (Site Config)")
 RULES_FILE = "config/common_rules.md"
 PARTS_DIR = "config/parts"
 
-tab1, tab2 = st.tabs(["共通ルール (Common Rules)", "サイト別パーツ (Site Parts)"])
+tab1, tab2, tab3 = st.tabs(["共通ルール (Common Rules)", "サイト別パーツ (Site Parts)", "サイト接続設定 (sites.json)"])
 
 # Tab 1: Common Rules
 with tab1:
@@ -69,3 +69,26 @@ with tab2:
                 f.write(new_content)
             st.toast(f"{file_name_input} を保存しました", icon="✅")
             st.rerun()
+
+# Tab 3: Sites Config
+with tab3:
+    st.subheader("WordPress接続設定 (sites.json)")
+    SITES_FILE = "config/sites.json"
+    
+    current_sites = "{}"
+    if os.path.exists(SITES_FILE):
+        with open(SITES_FILE, 'r', encoding='utf-8') as f:
+             current_sites = f.read()
+    
+    new_sites = st.text_area("JSON設定", value=current_sites, height=300)
+    
+    if st.button("設定を保存"):
+        try:
+            # Validate JSON
+            import json
+            json.loads(new_sites)
+            with open(SITES_FILE, 'w', encoding='utf-8') as f:
+                f.write(new_sites)
+            st.toast("保存しました", icon="✅")
+        except json.JSONDecodeError:
+            st.error("JSON形式が不正です。")
