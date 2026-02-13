@@ -138,9 +138,20 @@ if selected_type:
     st.sidebar.markdown("---")
     st.sidebar.markdown("### 💾 永続化設定 (GitHub)")
     
-    # Check Secrets
-    github_token = st.secrets.get("GITHUB_TOKEN", "")
-    repo_name = st.secrets.get("GITHUB_REPOSITORY", "")
+    # Check Secrets (Cloud) or Env (Local)
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    # Try Uppercase then Lowercase
+    token = st.secrets.get("GITHUB_TOKEN") or st.secrets.get("github_token") or os.getenv("GITHUB_TOKEN")
+    repo = st.secrets.get("GITHUB_REPOSITORY") or st.secrets.get("github_repository") or os.getenv("GITHUB_REPOSITORY")
+    
+    # Debug info (Hidden by default)
+    with st.sidebar.expander("Secrets Debug Info"):
+        st.write("Loaded Keys (Secrets):", list(st.secrets.keys()))
+        st.write("Loaded Keys (Env):", [k for k in os.environ.keys() if "GITHUB" in k])
+        st.write(f"Token Found: {'Yes' if token else 'No'}")
+        st.write(f"Repo Found: {'Yes' if repo else 'No'}")
     
     if github_token and repo_name:
         st.sidebar.success("GitHub連携: 有効 ✅")
