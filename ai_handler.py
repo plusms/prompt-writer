@@ -70,37 +70,68 @@ class AIHandler:
             prompt_data = prompt_dict[step]
             
             # Helper to build prompt string from Dict or String
+            exec_text = ""
+            check_text = ""
+            
             if isinstance(prompt_data, dict):
                 exec_text = prompt_data.get("exec", "")
                 check_text = prompt_data.get("check", "")
-                prompt_content = f"**【実行内容】**\n{exec_text}\n\n**【自己チェック】**\n{check_text}\n"
             else:
-                prompt_content = prompt_data
+                exec_text = prompt_data
+                check_text = "" # No separate check for legacy string
 
             # Format prompt (slug/kw injection)
             try:
-                formatted_content = prompt_content.format(slug=slug, main_kw=main_kw)
+                formatted_exec = exec_text.format(slug=slug, main_kw=main_kw)
+                formatted_check = check_text.format(slug=slug, main_kw=main_kw) if check_text else ""
             except:
-                formatted_content = prompt_content
+                formatted_exec = exec_text
+                formatted_check = check_text
 
             print(f"--- [Gemini] Proceeding to {step} ---")
+            
+            # PHASE 1: Execution (Draft)
             if progress_callback:
-                progress_callback(f"{step} 実行中 (Gemini)")
+                progress_callback(f"{step} 実行中 (Draft)...")
                 
-            next_prompt = f"""
+            draft_prompt = f"""
             次の {step} を実行してください。
 
-            {formatted_content}
-
+            {formatted_exec}
+            
             出力をお願いします。
             """
-
+            
             try:
-                response = self._send_message_with_retry(chat, next_prompt)
-                full_log += f"\n\n--- User ({step}) ---\n{next_prompt}\n\n--- Gemini ---\n{response.text}"
-                
+                # 1. Draft
+                response = self._send_message_with_retry(chat, draft_prompt)
+                full_log += f"\n\n--- User ({step} - Draft) ---\n{draft_prompt}\n\n--- Gemini ---\n{response.text}"
+                final_response_text = response.text
+
+                # PHASE 2: Self-Check (Refine) - ONLY if check_text exists
+                if formatted_check.strip():
+                    if progress_callback:
+                        progress_callback(f"{step} 自己チェック中 (Refine)...")
+                    
+                    refine_prompt = f"""
+                    ありがとうございます。
+                    直前の出力結果に対して、以下の【自己チェック基準】を用いて厳密にチェックし、
+                    問題がある場合は修正した【最終結果】を出力してください。
+                    問題がない場合も、そのまま出力してください。
+                    
+                    **【自己チェック基準】**
+                    {formatted_check}
+                    
+                    出力は修正後のコンテンツのみをお願いします。
+                    """
+                    
+                    response = self._send_message_with_retry(chat, refine_prompt)
+                    full_log += f"\n\n--- User ({step} - Refine) ---\n{refine_prompt}\n\n--- Gemini ---\n{response.text}"
+                    final_response_text = response.text
+
+                # Callback with FINAL result
                 if step_callback:
-                    step_callback(step, response.text)
+                    step_callback(step, final_response_text)
 
             except Exception as e:
                 print(f"Error at {step}: {e}")
