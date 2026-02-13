@@ -114,6 +114,10 @@ class AIHandler:
                 response = self._send_message_with_retry(chat, draft_prompt)
                 full_log += f"\n\n--- User ({step} - Draft) ---\n{draft_prompt}\n\n--- Gemini ---\n{response.text}"
                 final_response_text = response.text
+                
+                # Callback for Draft (Optional mapping: "STEP X (Draft)")
+                if step_callback:
+                     step_callback(f"{step} (Draft)", response.text)
 
                 # PHASE 2: Self-Check (Refine) - ONLY if check_text exists
                 if formatted_check.strip():
