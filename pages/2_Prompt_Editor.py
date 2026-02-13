@@ -97,6 +97,9 @@ if selected_type:
             try:
                 parsed_mappings = json.loads(new_mappings_json)
                 current_data["mappings"] = parsed_mappings
+                # SAVE IMMEDIATELY! otherwise it's lost on rerun
+                prompts_data[selected_type] = current_data
+                save_prompts(prompts_data)
                 st.toast("マッピングを更新しました (保存ボタンを押して確定してください)", icon="✅")
             except json.JSONDecodeError:
                 st.error("JSON形式が不正です")
