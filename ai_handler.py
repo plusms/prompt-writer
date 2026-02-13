@@ -41,6 +41,12 @@ class AIHandler:
         
         # 1. Prepare Initial Prompt
         initial_prompt_template = prompt_dict.get("Initial", "")
+        
+        # Handle if Initial is a dict (from new Editor)
+        if isinstance(initial_prompt_template, dict):
+            # "Initial" usually doesn't have checks, just use exec
+            initial_prompt_template = initial_prompt_template.get("exec", "")
+
         if not initial_prompt_template:
             raise ValueError("No 'Initial' prompt found.")
 
