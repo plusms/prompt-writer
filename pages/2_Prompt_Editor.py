@@ -84,8 +84,22 @@ if selected_type:
     
     # Edit Mappings
     with tabs[-1]:
-        except:
-             st.error("JSON形式が不正です")
+        st.markdown("### 出力先マッピング設定")
+        st.info("各ステップの出力結果をスプレッドシートのどの列（番号）に保存するか設定します。")
+        
+        current_mappings = current_data.get("mappings", {})
+        # Convert to JSON string for editing
+        mappings_json = json.dumps(current_mappings, indent=4, ensure_ascii=False)
+        
+        new_mappings_json = st.text_area("Mappings (JSON)", value=mappings_json, height=400)
+        
+        if st.button("マッピングを更新"):
+            try:
+                parsed_mappings = json.loads(new_mappings_json)
+                current_data["mappings"] = parsed_mappings
+                st.toast("マッピングを更新しました (保存ボタンを押して確定してください)", icon="✅")
+            except json.JSONDecodeError:
+                st.error("JSON形式が不正です")
 
     if st.button("変更を保存"):
         prompts_data[selected_type] = current_data
