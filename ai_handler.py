@@ -77,8 +77,15 @@ class AIHandler:
                 exec_text = prompt_data.get("exec", "")
                 check_text = prompt_data.get("check", "")
             else:
-                exec_text = prompt_data
-                check_text = "" # No separate check for legacy string
+                # Legacy String Structure - Try to auto-split
+                val = prompt_data
+                if "**【自己チェック】**" in val:
+                    parts = val.split("**【自己チェック】**")
+                    exec_text = parts[0].replace("**【実行内容】**", "").strip()
+                    check_text = parts[1].strip()
+                else:
+                    exec_text = val
+                    check_text = ""
 
             # Format prompt (slug/kw injection)
             try:
