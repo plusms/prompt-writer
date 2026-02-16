@@ -96,6 +96,18 @@
             "check": ""
         },
         "mappings": {
+            "Initial": {
+                "col": 15,
+                "key": "Initial"
+            },
+            "STEP 1.5": {
+                "col": 16,
+                "key": "goal"
+            },
+            "STEP 3": {
+                "col": 17,
+                "key": "Headings"
+            },
             "STEP 4": {
                 "col": 11,
                 "key": "title"
