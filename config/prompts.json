@@ -101,19 +101,19 @@
         },
         "mappings": {
             "STEP 4": {
-                "col": 10,
+                "col": 11,
                 "key": "title"
             },
             "STEP 5": {
-                "col": 12,
+                "col": 13,
                 "key": "content"
             },
             "STEP 6": {
-                "col": 9,
+                "col": 10,
                 "key": "image_prompts"
             },
             "STEP 7": {
-                "col": 14,
+                "col": 15,
                 "key": "Contentfix"
             },
             "DraftURL": {
