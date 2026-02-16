@@ -112,6 +112,10 @@
                 "col": 9,
                 "key": "image_prompts"
             },
+            "STEP 7": {
+                "col": 14,
+                "key": "Contentfix"
+            },
             "DraftURL": {
                 "col": 8
             }
