@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 st.set_page_config(page_title="Auto Writer AI", page_icon="✍️", layout="wide")
 
 # Title
-st.title("✍️ Auto Article Writer Tool")
+st.title("✍️ ハイパー記事作成くん")
 
 # Sidebar: API Key
 st.sidebar.header("セッティング")
@@ -40,3 +40,4 @@ if not st.session_state["api_key"]:
     st.warning("⚠️ 左のサイドバーでGemini API Keyを設定してください。")
 else:
     st.success("✅ API Key設定済み")
+
