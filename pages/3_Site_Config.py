@@ -1,12 +1,35 @@
 import streamlit as st
 import os
+from dotenv import load_dotenv
 
 st.set_page_config(page_title="Site Config", page_icon="⚙️", layout="wide")
 
 st.title("⚙️ サイト・ルール設定 (Site Config)")
 
+# Load Secrets / Env
+load_dotenv()
+token = st.secrets.get("GITHUB_TOKEN") or st.secrets.get("github_token") or os.getenv("GITHUB_TOKEN")
+repo = st.secrets.get("GITHUB_REPOSITORY") or st.secrets.get("github_repository") or os.getenv("GITHUB_REPOSITORY")
+
 RULES_FILE = "config/common_rules.md"
 PARTS_DIR = "config/parts"
+
+# Helper for GitHub
+def commit_file_to_github(file_path, content, message):
+    if not token or not repo:
+        st.error("GitHub連携が無効です。Secretsを設定してください。")
+        return
+    try:
+        from github_handler import GitHubHandler
+        gh = GitHubHandler(token, repo)
+        success, msg = gh.commit_file(file_path, content, message)
+        if success:
+            st.toast(f"GitHubへ保存しました: {file_path}", icon="🚀")
+            st.success(f"GitHubへコミットしました: {file_path}")
+        else:
+            st.error(f"GitHub保存エラー: {msg}")
+    except Exception as e:
+        st.error(f"予期せぬエラー: {e}")
 
 tab1, tab2, tab3 = st.tabs(["共通ルール (Common Rules)", "サイト別パーツ (Site Parts)", "サイト接続設定 (sites.json)"])
 
@@ -20,10 +43,17 @@ with tab1:
             
     new_rules = st.text_area("共通ルール編集", value=rules_content, height=500)
     
-    if st.button("ルールを保存"):
-        with open(RULES_FILE, 'w', encoding='utf-8') as f:
-            f.write(new_rules)
-        st.toast("共通ルールを保存しました", icon="✅")
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        if st.button("ルールを保存 (一時保存)"):
+            with open(RULES_FILE, 'w', encoding='utf-8') as f:
+                f.write(new_rules)
+            st.toast("共通ルールを一時保存しました", icon="✅")
+            
+    with col2:
+        if token and repo:
+            if st.button("GitHubにコミット (共通ルール)"):
+                commit_file_to_github(RULES_FILE, new_rules, "Update common_rules.md")
 
 # Tab 2: Site Parts
 with tab2:
@@ -60,15 +90,32 @@ with tab2:
             
     new_content = st.text_area("パーツ内容 (Markdown/HTML)", value=file_content, height=400)
     
-    if st.button("パーツを保存"):
-        if not file_name_input:
-            st.error("ファイル名を入力してください")
-        else:
-            save_path = os.path.join(PARTS_DIR, file_name_input)
-            with open(save_path, 'w', encoding='utf-8') as f:
-                f.write(new_content)
-            st.toast(f"{file_name_input} を保存しました", icon="✅")
-            st.rerun()
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        if st.button("パーツを保存 (一時保存)"):
+            if not file_name_input:
+                st.error("ファイル名を入力してください")
+            else:
+                save_path = os.path.join(PARTS_DIR, file_name_input)
+                with open(save_path, 'w', encoding='utf-8') as f:
+                    f.write(new_content)
+                st.toast(f"{file_name_input} を保存しました", icon="✅")
+                st.rerun()
+    
+    with col2:
+        if token and repo and selected_file != "(新規作成)":
+             if st.button(f"GitHubにコミット ({selected_file})"):
+                 # file_name_input is disabled but contains the name
+                 target_file = f"config/parts/{selected_file}"
+                 commit_file_to_github(target_file, new_content, f"Update parts: {selected_file}")
+        elif token and repo and selected_file == "(新規作成)":
+             if st.button("GitHubに新規作成"):
+                 if not file_name_input:
+                     st.error("ファイル名を入力してください")
+                 else:
+                     target_file = f"config/parts/{file_name_input}"
+                     commit_file_to_github(target_file, new_content, f"Create parts: {file_name_input}")
+
 
 # Tab 3: Sites Config
 with tab3:
@@ -82,13 +129,25 @@ with tab3:
     
     new_sites = st.text_area("JSON設定", value=current_sites, height=300)
     
-    if st.button("設定を保存"):
-        try:
-            # Validate JSON
-            import json
-            json.loads(new_sites)
-            with open(SITES_FILE, 'w', encoding='utf-8') as f:
-                f.write(new_sites)
-            st.toast("保存しました", icon="✅")
-        except json.JSONDecodeError:
-            st.error("JSON形式が不正です。")
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        if st.button("設定を保存 (一時保存)"):
+            try:
+                # Validate JSON
+                import json
+                json.loads(new_sites)
+                with open(SITES_FILE, 'w', encoding='utf-8') as f:
+                    f.write(new_sites)
+                st.toast("保存しました", icon="✅")
+            except json.JSONDecodeError:
+                st.error("JSON形式が不正です。")
+                
+    with col2:
+        if token and repo:
+            if st.button("GitHubにコミット (sites.json)"):
+                 try:
+                    import json
+                    json.loads(new_sites) # Validate before commit
+                    commit_file_to_github(SITES_FILE, new_sites, "Update sites.json")
+                 except json.JSONDecodeError:
+                    st.error("JSON形式が不正です。コミットできません。")
